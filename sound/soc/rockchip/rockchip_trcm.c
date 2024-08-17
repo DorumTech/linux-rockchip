@@ -381,6 +381,7 @@ static int dmaengine_trcm_dma_guard_new(struct snd_soc_component *component,
 static int dmaengine_trcm_new(struct snd_soc_component *component,
 			     struct snd_soc_pcm_runtime *rtd)
 {
+	pr_warn("HELLO from dmaengine_trcm_new\n");
 	struct dmaengine_trcm *trcm = soc_component_to_trcm(component);
 	struct snd_pcm_substream *substream;
 	size_t prealloc_buffer_size;
@@ -391,34 +392,48 @@ static int dmaengine_trcm_new(struct snd_soc_component *component,
 	prealloc_buffer_size = prealloc_buffer_size_kbytes * 1024;
 	max_buffer_size = SIZE_MAX;
 
+	pr_warn("I WILL DO dmaengine_trcm_dma_guard_new NOW\n");
 	ret = dmaengine_trcm_dma_guard_new(component, rtd);
-	if (ret)
+	if (ret) {
+		pr_warn("IT ERRORED!!\n");
 		return ret;
+	}
 
 	for_each_pcm_streams(i) {
+		pr_warn("AM DOING FOR EACH PCM STREAMS %u\n", i);
 		substream = rtd->pcm->streams[i].substream;
+		pr_warn("GOT SUBSTREAM %llx", (unsigned long long)substream);
 		if (!substream)
 			continue;
 
+		pr_warn("DO WE HAVE trcm->chan[%u]?\n", i);
 		if (!trcm->chan[i]) {
+			pr_warn("NO!\n");
 			dev_err(component->dev,
 				"Missing dma channel for stream: %d\n", i);
 			return -EINVAL;
 		}
 
+		pr_warn("WILL DO snd_pcm_set_managed_buffer\n");
 		snd_pcm_set_managed_buffer(substream,
 				SNDRV_DMA_TYPE_DEV_IRAM,
 				dmaengine_dma_dev(trcm, substream),
 				prealloc_buffer_size,
 				max_buffer_size);
+		pr_warn("DID snd_pcm_set_managed_buffer\n");
 
+		pr_warn("DO WE HAVE rtd->pcm->streams[%d].pcm->name[0]?\n", i);
 		if (rtd->pcm->streams[i].pcm->name[0] == '\0') {
+			pr_warn("YES! DOING strscpy_pad\n");
 			strscpy_pad(rtd->pcm->streams[i].pcm->name,
 				    rtd->pcm->streams[i].pcm->id,
 				    sizeof(rtd->pcm->streams[i].pcm->name));
+		} else {
+			pr_warn("NO!\n");
 		}
 	}
 
+	pr_warn("OKAY dmaengine_trcm_new OUT\n");
 	return 0;
 }
 
